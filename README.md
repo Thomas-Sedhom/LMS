@@ -46,6 +46,10 @@ src/
 │   ├── pipes/
 │   └── utils/
 │
+├── config/
+│   ├── swagger.config.ts
+│   └── app.config.ts
+│
 ├── modules/
 │   ├── module1/
 │   │   ├── dto/
