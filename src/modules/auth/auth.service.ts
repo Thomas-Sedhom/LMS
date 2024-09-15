@@ -12,6 +12,13 @@ import { Profile as GoogleProfile } from 'passport-google-oauth20';
 import { Profile as FacebookProfile } from 'passport-facebook';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
+import { TwilioService } from '../../shared/services/twilio.service';
+import { VerifyOtpByPhoneDto } from './dto/verify-otp-by-phone.dto';
+import { ResetPassDto } from './dto/reset-pass.dto';
+import { generateOtp } from '../../common/utils/generate-otp.util';
+import { MailgunService } from '../../shared/services/mailgun.service';
+import { VerifyOtpByEmailDto } from './dto/verify-otp-by-email.dto';
+import { EmailService } from '../../shared/services/email.service';
 
 
 
@@ -20,6 +27,8 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly jwtService: JwtService,
+    private readonly twilioService: TwilioService,
+    private readonly emailService: EmailService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     ) {}
 
@@ -147,4 +156,33 @@ export class AuthService {
       },
     };
   }
+
+  async requestPasswordReset(email: string): Promise<any> {
+    const otpCode = generateOtp()
+    await this.emailService.sendOtpEmail(email, otpCode);
+  }
+
+  async verifyOtpAndAllowPasswordReset(verifyOtp: VerifyOtpByEmailDto): Promise<void> {
+    await this.emailService.verifyOtpVerification(verifyOtp);
+    await this.cacheManager.set(`otp-verified-${verifyOtp.email}`, true)
+  }
+
+  async isOtpVerified(email: string): Promise<void> {
+    const isVerified = await this.cacheManager.get(`otp-verified-${email}`);
+    if(!isVerified) {
+      throw new BadRequestException({ message: 'OTP has not been verified. You cannot reset the password without OTP verification.' });
+    }
+  }
+
+  async resetPassword(resetPass: ResetPassDto): Promise <void>{
+    const user = await this.userModel.findOne({email: resetPass.email});
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    user.password = await hashPass(resetPass.password);
+    await user.save();
+    await this.cacheManager.del(`otp-verified-${resetPass.email}`)
+  }
+
+
 }

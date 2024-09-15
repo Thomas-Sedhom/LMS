@@ -10,10 +10,11 @@ import { GoogleAuthGuard } from '../../common/guards/google-auth.guard';
 import { JwtModule } from '../../shared/modules/jwt/jwt.module';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { FacebookAuthGuard } from '../../common/guards/facebook-auth.guard';
+import { EmailService } from '../../shared/services/email.service';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, TwilioService, GoogleStrategy, GoogleAuthGuard, FacebookStrategy, FacebookAuthGuard],
+  providers: [AuthService, TwilioService, EmailService, GoogleStrategy, GoogleAuthGuard, FacebookStrategy, FacebookAuthGuard],
   imports:[
     MongooseModule.forFeature([
       {name: User.name, schema: UserSchema}

@@ -16,14 +16,16 @@ import { Request, Response } from 'express';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { TwilioService } from '../../shared/services/twilio.service';
 import { GoogleAuthGuard } from '../../common/guards/google-auth.guard';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { VerifyOtpByPhoneDto } from './dto/verify-otp-by-phone.dto';
 import { FacebookAuthGuard } from '../../common/guards/facebook-auth.guard';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ResponseInterceptor } from '../../common/interceptors/response.interceptor';
 import { ResponseMessage } from '../../common/decorators/responce_message.decorator';
 import { CustomExceptionFilter } from '../../common/filters/custom-exception.filter';
+import { ResetPassDto } from './dto/reset-pass.dto';
+import { VerifyOtpByEmailDto } from './dto/verify-otp-by-email.dto';
 
-@ApiTags("Auth")
+@ApiTags('Auth')
 @UseFilters(CustomExceptionFilter)
 @UseInterceptors(ResponseInterceptor)
 @Controller('auth')
@@ -39,9 +41,8 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'OTP sent successfully' })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-
-  @ResponseMessage("OTP sent successfully")
-  @Post("register")
+  @ResponseMessage('OTP sent successfully')
+  @Post('register')
   async saveTemporaryRegistrationData(@Body() registerDto: RegisterAuthDto) {
     try {
       // Save form data temporarily without registrationId
@@ -51,25 +52,28 @@ export class AuthController {
       const otpSid = await this.twilioService.sendOtp(registerDto.phone);
       return { otpSid };
     } catch (err) {
-      console.log(err.message)
-      throw err
+      throw err;
     }
   }
 
   // api/v1/auth/verify-otp
   @ApiOperation({ summary: 'Verify OTP and complete registration' })
-  @ApiBody({ type: VerifyOtpDto })
-  @ApiResponse({ status: 201, description: 'Registration and authentication successful' })
+  @ApiBody({ type: VerifyOtpByPhoneDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration and authentication successful',
+  })
   @ApiResponse({ status: 400, description: 'Invalid OTP' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   @Post('verify-otp')
-  async verifyOtp(@Body() otp: VerifyOtpDto, @Res() res: Response) {
+  async verifyOtp(@Body() otp: VerifyOtpByPhoneDto, @Res() res: Response) {
     try {
       const verificationStatus = await this.twilioService.verifyOtp(otp);
       if (verificationStatus !== 'approved') {
         throw new BadRequestException({ message: 'Invalid OTP' });
       }
-      const { accessToken, refreshToken, user } = await this.authService.completeRegistration(otp.phone);
+      const { accessToken, refreshToken, user } =
+        await this.authService.completeRegistration(otp.phone);
 
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
@@ -86,18 +90,15 @@ export class AuthController {
 
       return res.json({
         statusCode: 201,
-        message: "Registration and authentication successful",
+        message: 'Registration and authentication successful',
         data: {
           accessToken,
           refreshToken,
           user,
-        }
+        },
       });
     } catch (err) {
-      throw new BadRequestException({
-        statusCode: err.statusCode,
-        message: err.message,
-      });
+      throw err;
     }
   }
 
@@ -107,14 +108,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Authentication successful' })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-  @Post("login")
-  async login(@Body() loginDto: LoginAuthDto, @Res() res: Response){
-    try{
-      const { accessToken, refreshToken, user } = await this.authService.login(loginDto);
+  @Post('login')
+  async login(@Body() loginDto: LoginAuthDto, @Res() res: Response) {
+    try {
+      const { accessToken, refreshToken, user } =
+        await this.authService.login(loginDto);
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "none",
+        sameSite: 'none',
         maxAge: 604800000, // 7 days
       });
       // Set refresh token as HTTP-only cookie
@@ -123,15 +125,18 @@ export class AuthController {
         secure: true,
         sameSite: 'none',
         maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
-      })
-      return res.json({
-        accessToken,
-        refreshToken,
-        user,
-        message: 'Authentication successful',
       });
-    }catch (err){
-      throw new BadRequestException({ message: err.message });
+      return res.json({
+        statusCode: 201,
+        message: 'Login and authentication successful',
+        data: {
+          accessToken,
+          refreshToken,
+          user,
+        },
+      });
+    } catch (err) {
+      throw err;
     }
   }
 
@@ -149,7 +154,8 @@ export class AuthController {
       if (!refreshToken) {
         throw new BadRequestException({ message: 'Refresh token not found' });
       }
-      const { accessToken, refreshToken: newRefreshToken } = await this.authService.refreshTokens(refreshToken);
+      const { accessToken, refreshToken: newRefreshToken } =
+        await this.authService.refreshTokens(refreshToken);
 
       // Set new access token and refresh token in cookies
       res.cookie('accessToken', accessToken, {
@@ -166,9 +172,16 @@ export class AuthController {
         maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
       });
 
-      return res.json({ message: 'Token refreshed successfully' });
+      return res.json({
+        statusCode: 201,
+        message: 'Token refreshed successfully',
+        data: {
+          accessToken,
+          refreshToken,
+        },
+      });
     } catch (err) {
-      throw new BadRequestException({ message: err.message });
+      throw err;
     }
   }
 
@@ -176,17 +189,21 @@ export class AuthController {
   @ApiOperation({ summary: 'Facebook login' })
   @ApiResponse({ status: 302, description: 'Redirects to Facebook login' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ResponseMessage('Facebook Authentication')
   @Get('facebook/login')
   @UseGuards(FacebookAuthGuard)
   async handleFacebookLogin() {
-    return {msg: "Facebook Authentication"};
+    try {
+      return { msg: 'Facebook Authentication' };
+    } catch (err) {
+      throw err;
+    }
   }
 
   // api/v1/auth/facebook/redirect
   @ApiOperation({ summary: 'Facebook redirect' })
   @ApiResponse({ status: 302, description: 'Handles Facebook login redirect' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-
   @Get('facebook/redirect')
   @UseGuards(FacebookAuthGuard)
   async handleFacebookRedirect(@Req() req: Request, @Res() res: Response) {
@@ -206,25 +223,24 @@ export class AuthController {
       maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
     });
 
-    res.redirect("https://leqaa.life/login.html")
+    res.redirect('https://leqaa.life/login.html');
   }
 
   // api/v1/auth/google/login
   @ApiOperation({ summary: 'Google login' })
   @ApiResponse({ status: 302, description: 'Redirects to Google login' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-
+  @ResponseMessage('Google Authentication')
   @Get('google/login')
   @UseGuards(GoogleAuthGuard)
   async handleGoogleLogin() {
-    return {msg: "Google Authentication"};
+    return { msg: 'Google Authentication' };
   }
 
   // api/v1/auth/google/redirect
   @ApiOperation({ summary: 'Google redirect' })
   @ApiResponse({ status: 302, description: 'Handles Google login redirect' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-
   @Get('google/redirect')
   @UseGuards(GoogleAuthGuard)
   async handleGoogleRedirect(@Req() req: Request, @Res() res: Response) {
@@ -244,6 +260,61 @@ export class AuthController {
       maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
     });
 
-    res.redirect("https://leqaa.life/login.html")
+    res.redirect('https://leqaa.life/login.html');
+  }
+
+  // api/v1/auth/password/request-reset
+  @ApiOperation({ summary: 'send OTP to reset pass' })
+  @ApiBody({
+    schema: {
+      properties: { email: { type: 'string', example: 'thomassedhom97@gmail.com' } },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'OTP sent successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ResponseMessage('OTP sent successfully')
+  @Post('password/request-reset')
+  async requestPasswordReset(@Body('email') email: string): Promise<string> {
+    try {
+      await this.authService.requestPasswordReset(email);
+      return "OTP sent successfully";
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // api/v1/auth/password/verify-otp
+  @ApiOperation({ summary: 'Verify OTP for password reset' })
+  @ApiBody({type: VerifyOtpByEmailDto })
+  @ApiResponse({ status: 200, description: 'OTP verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid OTP' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ResponseMessage('OTP verified successfully')
+  @Post('password/verify-otp')
+  async verifyOTP(@Body() verifyOtp: VerifyOtpByEmailDto): Promise<string> {
+    try {
+      await this.authService.verifyOtpAndAllowPasswordReset(verifyOtp);
+      return "OTP verified successfully";
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // api/v1/auth/password/reset
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ResponseMessage('Password reset successfully')
+  @Post('password/reset')
+  async resetPassword(@Body() resetPasswordDto: ResetPassDto): Promise<string>  {
+    try {
+      await this.authService.isOtpVerified(resetPasswordDto.email);
+      await this.authService.resetPassword(resetPasswordDto);
+      return 'Password reset successfully' ;
+    } catch (err) {
+      throw err;
+    }
   }
 }

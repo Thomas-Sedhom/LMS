@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class VerifyOtpDto {
+export class VerifyOtpByPhoneDto {
   @IsNotEmpty({message: "Phone is required"})
   @IsString({message: "Phone must be a string"})
   @ApiProperty({ example: '+201003428624', description: 'Phone of the user', type: String })

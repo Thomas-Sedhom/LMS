@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Twilio from 'twilio';
-import { VerifyOtpDto } from '../../modules/auth/dto/verify-otp.dto';
+import { VerifyOtpByPhoneDto } from '../../modules/auth/dto/verify-otp-by-phone.dto';
 
 @Injectable()
 export class TwilioService {
@@ -28,7 +28,7 @@ export class TwilioService {
   }
 
   // Method to verify OTP
-  async verifyOtp(otp: VerifyOtpDto, channel: 'sms' | 'whatsapp' = 'sms') {
+  async verifyOtp(otp: VerifyOtpByPhoneDto, channel: 'sms' | 'whatsapp' = 'sms') {
     const to = otp.phone;
     const code = otp.code;
     const serviceSid = this.configService.get<string>('TWILIO_SERVICE_SID');
