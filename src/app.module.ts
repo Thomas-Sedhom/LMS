@@ -6,6 +6,7 @@ import * as process from 'node:process';
 import { JwtModule } from './shared/modules/jwt/jwt.module';
 import { CacheModule } from "@nestjs/cache-manager";
 import { MailerModule } from '@nestjs-modules/mailer';
+import { CourseModule } from './modules/course/course.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
       }
     }),
     AuthModule,
+    CourseModule,
     JwtModule,
   ],
 

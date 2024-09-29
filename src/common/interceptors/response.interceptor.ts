@@ -13,7 +13,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       map(data => {
         // Check if the status code is not an error (e.g., 2xx)
         const statusCode = response.statusCode;
-        console.log(statusCode);
+        // console.log(statusCode);
         if (statusCode >= 200 && statusCode < 300) {
           return {
             statusCode: statusCode,

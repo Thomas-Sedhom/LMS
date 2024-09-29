@@ -3,11 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 export class RegisterAuthDto {
   @IsNotEmpty({message: "First name is required"})
   @IsString({message: "First name must be a string"})
-  @ApiProperty({ example: 'John', description: 'First Name name of the user', type: String })
+  @ApiProperty({ example: 'John', description: 'First name of the user', type: String })
   firstName: string;
   @IsNotEmpty({message: "Last name is required"})
   @IsString({message: "Last name must be a string"})
-  @ApiProperty({ example: ' Doe', description: 'Last Name name of the user', type: String })
+  @ApiProperty({ example: ' Doe', description: 'Last name of the user', type: String })
   lastName: string;
   @IsNotEmpty({message: "Email is required"})
   @IsString({message: "Email must be a string"})

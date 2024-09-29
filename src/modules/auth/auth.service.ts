@@ -183,6 +183,4 @@ export class AuthService {
     await user.save();
     await this.cacheManager.del(`otp-verified-${resetPass.email}`)
   }
-
-
 }
