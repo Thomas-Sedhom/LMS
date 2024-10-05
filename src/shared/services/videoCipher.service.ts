@@ -203,4 +203,33 @@ export class VideoCipherService {
       );
     }
   }
+
+  async updateVideoTitle(videoId: string, newTitle: string): Promise<any> {
+    const url = `${this.apiUrl}/${videoId}`; // VdoCipher API endpoint for updating video title
+    const headers = {
+      Authorization: `Apisecret ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+
+    const body = {
+      title: newTitle,
+    };
+
+    try {
+      // Sending the POST request to update the video title
+      const response = await lastValueFrom(
+        this.httpService.post(url, body, { headers })
+      );
+      console.log(response.data)
+      // Returning the response data after successful update
+      return response.data;
+    } catch (error) {
+      console.log('Error updating video title:', error.response?.data || error);
+      throw new HttpException(
+        'Error updating video title',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

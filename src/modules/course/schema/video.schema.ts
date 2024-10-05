@@ -44,18 +44,28 @@ export class Video {
     type: mongoose.Types.ObjectId,
     ref: "Course",
     index: true,
-    required: true,
+    required: false,
     trim: true,
   })
-  courseId: mongoose.Types.ObjectId;
+  courseId?: mongoose.Types.ObjectId;
+
+  @Prop({
+    type: mongoose.Types.ObjectId,
+    ref: "Video",
+    index: true,
+    required: false,
+    trim: true,
+  })
+  mainVideoId?: mongoose.Types.ObjectId;
 
   @Prop({
     type: [mongoose.Types.ObjectId],
     ref: "Question",
     index: true,
+    required: false,
     trim: true,
   })
-  questionsId: [mongoose.Types.ObjectId];
+  questionsId?: [mongoose.Types.ObjectId];
 
   @Prop({
     required: true,
@@ -64,3 +74,6 @@ export class Video {
   uploadedAt: string
 }
 export const VideoSchema = SchemaFactory.createForClass(Video)
+
+// Define a compound index on videoId and questionTime
+VideoSchema.index({ videoId: 1, questionTime: 1 });

@@ -21,11 +21,12 @@ export class Question {
   questionTime: string
 
   @Prop({
-    type: QuestionTypeEnum,
+    type: String,  // Use String for a single enum value
+    enum: QuestionTypeEnum,  // Restrict to values of QuestionTypeEnum
     required: true,
     trim: true
   })
-  questionType: QuestionTypeEnum
+  questionType: QuestionTypeEnum;
 
   @Prop({
     type: String,
@@ -90,6 +91,8 @@ export class Question {
 
   @Prop({
     type: mongoose.Types.ObjectId,
+    ref: "Video",
+    index: true,
     trim: true,
   })
   videoRevisionId: mongoose.Types.ObjectId;

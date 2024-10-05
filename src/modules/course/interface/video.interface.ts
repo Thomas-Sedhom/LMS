@@ -6,7 +6,8 @@ export interface VideoInterface {
   videoTitle: string;
   videoDescription: string;
   videoUrl: string;
-  courseId: mongoose.Types.ObjectId;
-  questionsId: [mongoose.Types.ObjectId];
+  courseId?: mongoose.Types.ObjectId;
+  mainVideoId?: mongoose.Types.ObjectId;
+  questionsId?: [mongoose.Types.ObjectId];
   uploadedAt: string
 }

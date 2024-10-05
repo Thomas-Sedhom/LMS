@@ -47,7 +47,7 @@ export class Course {
     index: true,
     trim: true,
   })
-  videosId: [mongoose.Types.ObjectId];
+  videosId: mongoose.Types.ObjectId[];
 
   @Prop({
     required: true,

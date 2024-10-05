@@ -18,7 +18,7 @@ export interface QuestionInterface {
   paragraphAnswer?: number;
   trueFalseAnswer?: boolean ;
   completeAnswer?: string;
-  videoData: VideoDto
-  videoRevisionId?: mongoose.Types.ObjectId;
+  // videoData?: VideoDto
+  // videoRevisionId?: mongoose.Types.ObjectId;
   creationDate: string
 }

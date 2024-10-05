@@ -11,6 +11,8 @@ import { session } from 'passport';
 import { UpdateCourseDto } from '../dto/update_course.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { VideoCipherService } from '../../../shared/services/videoCipher.service';
+import { PaginationDTO } from '../../../common/dto/pagination.dto';
+import { PaginationUtil } from '../../../common/utils/pagination.util';
 
 @Injectable()
 export class CourseService {
@@ -52,7 +54,7 @@ export class CourseService {
       .findById(id)
       .populate({
         path: 'videosId',  // field to populate
-        select: 'videoId videoTitle videoDescription index videoUrl uploadedAt',  // only select specific fields from the video model
+        select: '_id videoId videoTitle videoDescription index videoUrl uploadedAt',  // only select specific fields from the video model
       })
       .exec()
     return course;
@@ -64,8 +66,8 @@ export class CourseService {
     return courses;
   }
 
-  async getAllCourses(): Promise<CourseInterface[]> {
-    const allCourses: CourseInterface[] = await this.courseModel.find();
+  async getAllCourses(paginationQuery: PaginationDTO): Promise<CourseInterface[]> {
+    const allCourses = await PaginationUtil(paginationQuery, this.courseModel);
     return allCourses;
   }
 

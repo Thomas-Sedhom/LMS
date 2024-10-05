@@ -7,6 +7,6 @@ export interface CourseInterface {
   whatYouLearn: string;
   coverImage: string;
   instructorId: mongoose.Types.ObjectId;
-  videosId: [mongoose.Types.ObjectId];
+  videosId: mongoose.Types.ObjectId[];
   createdDate: string
 }
