@@ -7,9 +7,9 @@ export class ResetPassDto {
   email: string;
   @IsNotEmpty({message: "Password is required"})
   @IsString({message: "Password must be a string"})
-  @Matches(/^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/, {
-    message: 'Password must be at least 8 characters long, include at least one uppercase letter, and one number',
+  @Matches(/^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|_<>-])(?=.*[a-zA-Z\d]).{8,}$/, {
+    message: 'Password must be at least 8 characters long, include at least one uppercase letter, and one symbol',
   })
-  @ApiProperty({ example: 'Rs24222682', description: 'Password of the user', type: String })
+  @ApiProperty({ example: 'Rm-24222682', description: 'Password of the user', type: String })
   password: string;
 }

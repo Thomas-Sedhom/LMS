@@ -6,8 +6,11 @@ export interface VideoInterface {
   videoTitle: string;
   videoDescription: string;
   videoUrl: string;
+  notes?: string;
+  pdf?: string;
   courseId?: mongoose.Types.ObjectId;
   mainVideoId?: mongoose.Types.ObjectId;
   questionsId?: [mongoose.Types.ObjectId];
-  uploadedAt: string
+  index?: string;
+  uploadedAt: string;
 }

@@ -8,5 +8,7 @@ export interface CourseInterface {
   coverImage: string;
   instructorId: mongoose.Types.ObjectId;
   videosId: mongoose.Types.ObjectId[];
-  createdDate: string
+  category: string;
+  subCategory: string;
+  createdDate: Date;
 }

@@ -3,7 +3,7 @@ import {
   Body,
   Controller,
   Get,
-  HttpException, InternalServerErrorException,
+  HttpException, HttpStatus, InternalServerErrorException,
   Post,
   Req,
   Res, UseFilters,
@@ -24,6 +24,7 @@ import { ResponseMessage } from '../../common/decorators/responce_message.decora
 import { CustomExceptionFilter } from '../../common/filters/custom-exception.filter';
 import { ResetPassDto } from './dto/reset-pass.dto';
 import { VerifyOtpByEmailDto } from './dto/verify-otp-by-email.dto';
+import { JwtService } from '../../shared/modules/jwt/jwt.service';
 
 @ApiTags('Auth')
 @UseFilters(CustomExceptionFilter)
@@ -33,6 +34,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly twilioService: TwilioService,
+    private readonly jwtService: JwtService
   ) {}
 
   // api/v1/auth/register
@@ -75,21 +77,10 @@ export class AuthController {
       const { accessToken, refreshToken, user } =
         await this.authService.completeRegistration(otp.phone);
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 604800000, // 7 days
-      });
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
-      });
+      this.jwtService.setAuthCookies(res, accessToken, refreshToken);
 
-      return res.json({
-        statusCode: 201,
+      return res.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
         message: 'Registration and authentication successful',
         data: {
           accessToken,
@@ -113,21 +104,11 @@ export class AuthController {
     try {
       const { accessToken, refreshToken, user } =
         await this.authService.login(loginDto);
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 604800000, // 7 days
-      });
-      // Set refresh token as HTTP-only cookie
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
-      });
-      return res.json({
-        statusCode: 201,
+
+      this.jwtService.setAuthCookies(res, accessToken, refreshToken);
+
+      return res.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
         message: 'Login and authentication successful',
         data: {
           accessToken,
@@ -158,22 +139,10 @@ export class AuthController {
         await this.authService.refreshTokens(refreshToken);
 
       // Set new access token and refresh token in cookies
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 604800000, // 7 days
-      });
+      this.jwtService.setAuthCookies(res, accessToken, refreshToken);
 
-      res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
-      });
-
-      return res.json({
-        statusCode: 201,
+      return res.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
         message: 'Token refreshed successfully',
         data: {
           accessToken,
@@ -209,19 +178,7 @@ export class AuthController {
   async handleFacebookRedirect(@Req() req: Request, @Res() res: Response) {
     const { accessToken, refreshToken, user }: any = req.user;
     // Set new access token and refresh token in cookies
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 604800000, // 7 days
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
-    });
+    this.jwtService.setAuthCookies(res, accessToken, refreshToken);
 
     res.redirect('https://leqaa.life/login.html');
   }
@@ -246,19 +203,7 @@ export class AuthController {
   async handleGoogleRedirect(@Req() req: Request, @Res() res: Response) {
     const { accessToken, refreshToken, user }: any = req.user;
     // Set new access token and refresh token in cookies
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 604800000, // 7 days
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months
-    });
+    this.jwtService.setAuthCookies(res, accessToken, refreshToken);
 
     res.redirect('https://leqaa.life/login.html');
   }
@@ -313,6 +258,35 @@ export class AuthController {
       await this.authService.isOtpVerified(resetPasswordDto.email);
       await this.authService.resetPassword(resetPasswordDto);
       return 'Password reset successfully' ;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // api/v1/instructor/logout
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @Post('logout')
+  async logout(@Res() res: Response) {
+    try {
+      // Clear the cookies
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+      });
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+      });
+
+      return res.status(HttpStatus.OK).json({
+        statusCode: HttpStatus.OK,
+        message: 'Logout successful',
+      });
     } catch (err) {
       throw err;
     }

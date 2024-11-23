@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from '../../shared/modules/jwt/jwt.service';
 import { Request, Response } from 'express';
 import { AuthService } from '../../modules/auth/auth.service';
+import { InstructorService } from '../../modules/instructor/instructor.service';
 
 @Injectable()
 export class JwtRefreshGuard implements CanActivate {
@@ -16,9 +17,8 @@ export class JwtRefreshGuard implements CanActivate {
     const accessToken = request.cookies['accessToken'];
     const refreshToken = request.cookies['refreshToken'];
 
-    if (!refreshToken) {
+    if (!refreshToken)
       throw new UnauthorizedException('No refresh token provided');
-    }
 
     // If access token is missing or expired, but refresh token is present, proceed to refresh token logic
     try {
@@ -31,7 +31,7 @@ export class JwtRefreshGuard implements CanActivate {
         throw new UnauthorizedException('Access token missing');
       }
     } catch (error) {
-      if (error.name === 'TokenExpiredError') {
+      if (error.name === 'UnauthorizedException') {
         // Access token is expired; try to refresh with the refresh token
         try {
           const newTokens = await this.authService.refreshTokens(refreshToken);
@@ -50,10 +50,11 @@ export class JwtRefreshGuard implements CanActivate {
             sameSite: 'none',
             maxAge: 60 * 24 * 60 * 60 * 1000, // 2 months in milliseconds
           });
-
+          // IMPORTANT: Attach the new access token to the request object, so JwtAuthGuard can read it
+          request.cookies['accessToken'] = newTokens.accessToken;
           return true;
         } catch (refreshError) {
-          throw new UnauthorizedException('Invalid refresh token');
+          throw refreshError;
         }
       } else {
         throw new UnauthorizedException('Invalid access token');

@@ -12,7 +12,9 @@ import { UpdateCourseDto } from '../dto/update_course.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { VideoCipherService } from '../../../shared/services/videoCipher.service';
 import { PaginationDTO } from '../../../common/dto/pagination.dto';
-import { PaginationUtil } from '../../../common/utils/pagination.util';
+import { PaginationUtil } from '../utils/pagination.util';
+import { InstructorService } from '../../instructor/instructor.service';
+import { AdminService } from '../../admin/admin.service';
 
 @Injectable()
 export class CourseService {
@@ -21,25 +23,80 @@ export class CourseService {
     @InjectModel(Course.name) private readonly courseModel: Model<Course>,
     private readonly videoCipherService: VideoCipherService,
     private readonly firebaseService: FirebaseService,
+    private readonly instructorService: InstructorService,
+    private readonly adminService: AdminService,
+
   ) {}
 
-  async createCourse(instructorID: string, course: CourseDto, files: any): Promise<CourseInterface> {
-    // Generate a unique ID for the folder
-    const uniqueFolderId: string = uuidv4();
-    const image = await this.firebaseService.uploadImageToCloud(files.coverImage, `\`${uniqueFolderId}\`/`);
+  async createCourseByInstructor(instructorID: string, course: CourseDto, files: any): Promise<CourseInterface> {
 
-    const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(instructorID)
-    const createdDate: string = new Date().toISOString();
+    const session: ClientSession = await this.courseModel.startSession();
+    session.startTransaction();
+    try{
+      // Generate a unique ID for the folder
+      const uniqueFolderId: string = uuidv4();
+      const image = await this.firebaseService.uploadImageToCloud(files.coverImage, `\`${uniqueFolderId}\`/`);
 
-    const response: CourseInterface = await this.courseModel.create({
-      courseName: course.courseName,
-      description: course.description,
-      whatYouLearn: course.whatYouLearn,
-      coverImage: image,
-      instructorId: id,
-      createdDate
-    });
-    return response;
+      const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(instructorID)
+      const createdDate: Date = new Date();
+
+      const [response]: CourseInterface[] = await this.courseModel.create([{
+        courseName: course.courseName,
+        description: course.description,
+        whatYouLearn: course.whatYouLearn,
+        category: course.category,
+        subCategory: course.subCategory,
+        coverImage: image,
+        instructorId: id,
+        createdDate
+      }], {session});
+
+      await this.instructorService.pushNewCourse(id, response._id);
+
+      await session.commitTransaction();
+      return response;
+    }catch(err){
+      await session.abortTransaction();
+      throw err;
+    }finally{
+      await session.endSession();
+    }
+
+  }
+
+  async createCourseByAdmin(adminId: string, course: CourseDto, files: any): Promise<CourseInterface> {
+
+    const session: ClientSession = await this.courseModel.startSession();
+    session.startTransaction();
+    try{
+      // Generate a unique ID for the folder
+      const uniqueFolderId: string = uuidv4();
+      const image = await this.firebaseService.uploadImageToCloud(files.coverImage, `\`${uniqueFolderId}\`/`);
+
+      const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(adminId)
+      const createdDate: Date = new Date();
+
+      const [response]: CourseInterface[] = await this.courseModel.create([{
+        courseName: course.courseName,
+        description: course.description,
+        whatYouLearn: course.whatYouLearn,
+        category: course.category,
+        subCategory: course.subCategory,
+        coverImage: image,
+        instructorId: id,
+        createdDate
+      }], {session});
+
+      await this.adminService.pushNewCourse(id, response._id);
+
+      await session.commitTransaction();
+      return response;
+    }catch(err){
+      await session.abortTransaction();
+      throw err;
+    }finally{
+      await session.endSession();
+    }
   }
 
   async findCourseById(courseId: mongoose.Types.ObjectId):Promise<any>{
@@ -60,9 +117,18 @@ export class CourseService {
     return course;
   }
 
-  async getCourses(instructorId: string): Promise<CourseInterface[]> {
+  async getCourseById(courseId: string): Promise<CourseInterface> {
+    const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(courseId);
+    const course: CourseInterface = await this.courseModel
+      .findById(id)
+      .exec()
+    return course;
+  }
+
+  async getCourses(instructorId: string, pagination: PaginationDTO): Promise<CourseInterface[]> {
     const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(instructorId);
-    const courses: CourseInterface[] = await this.courseModel.find({instructorId: id});
+    let filter: {} = {instructorId: id};
+    const courses: CourseInterface[] = await PaginationUtil(pagination, this.courseModel, filter);
     return courses;
   }
 
@@ -74,7 +140,7 @@ export class CourseService {
   async updateCourse(courseId: string, updateCourse: UpdateCourseDto): Promise<CourseInterface> {
     const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(courseId);
     await this.findCourseById(id);
-    const course: CourseInterface = await this.courseModel.findByIdAndUpdate(id, updateCourse, {new: true});
+    const course: CourseInterface = await this.courseModel.findByIdAndUpdate(id, updateCourse,);
     return course;
   }
 
@@ -95,18 +161,60 @@ export class CourseService {
     const session: ClientSession = await this.courseModel.startSession();
     session.startTransaction();
     try{
-      const id: mongoose.Types.ObjectId  = new mongoose.Types.ObjectId(courseId)
-      const course = await this.courseModel.findByIdAndDelete(id);
+      const id: mongoose.Types.ObjectId  = new mongoose.Types.ObjectId(courseId);
+      const course = await this.courseModel.findByIdAndDelete(id, {session});
       if (!course)
         throw new BadRequestException("Course not found");
 
-      await this.videoCipherService.deleteFolder(courseId);
+      if(course.videosId.length > 0)
+        await this.videoCipherService.deleteFolder(courseId);
 
      // Delete all videos associated with the course
       await this.videoModel.deleteMany({ courseId: id }, { session });
 
       // Commit the transaction
       await this.firebaseService.removeImageFromCloud(course.coverImage);
+
+      const instructorId: string = course.instructorId.toString();
+
+      // remove course id from course ids array in instructor object
+      await this.instructorService.popCourse(instructorId, id);
+
+      await session.commitTransaction();
+
+      return course;
+    }catch(error){
+      await session.abortTransaction();
+      throw error; // R
+    }finally {
+      // End the session
+      await session.endSession();
+    }
+  }
+
+  async deleteCourseByAdmin(courseId: string): Promise<any> {
+    const session: ClientSession = await this.courseModel.startSession();
+    session.startTransaction();
+    try{
+      const id: mongoose.Types.ObjectId  = new mongoose.Types.ObjectId(courseId);
+      const course = await this.courseModel.findByIdAndDelete(id, {session});
+      if (!course)
+        throw new BadRequestException("Course not found");
+
+      if(course.videosId.length > 0)
+        await this.videoCipherService.deleteFolder(courseId);
+
+      // Delete all videos associated with the course
+      await this.videoModel.deleteMany({ courseId: id }, { session });
+
+      // Commit the transaction
+      await this.firebaseService.removeImageFromCloud(course.coverImage);
+
+      const adminId: string = course.instructorId.toString();
+
+      // remove course id from course ids array in instructor object
+      await this.adminService.popCourse(adminId, id);
+
       await session.commitTransaction();
 
       return course;

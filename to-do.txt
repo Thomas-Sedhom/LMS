@@ -6,3 +6,23 @@ role guards
 auth guards
 user module crud + services
 contactUs module
+
+
+guards
+question swagger
+instructor - course logic
+-------------------------------------
+admin module auth + crud
+single responsibility
+admin services(get instructor by id)
+pagination for all gets, filter
+-------------------------------------
+student module
+shared DTOs
+-------------------------------------
+contact us
+optimize video loading process
+-------------------------------------
+nginx - docker
+-------------------------------------
+github actions

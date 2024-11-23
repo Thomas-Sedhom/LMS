@@ -12,7 +12,7 @@ export const comparePass = async (password: string, hashPassword: string): Promi
   const isMatch = await bcrypt.compare(password, hashPassword);
   if (!isMatch) {
     console.log(HttpStatus.BAD_REQUEST)
-    throw new BadRequestException("wrong password");
+    throw new BadRequestException("Invalid email or password");
   }
   return true; // Explicitly return true/false based on comparison
 };

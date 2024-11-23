@@ -46,6 +46,14 @@ export class QuestionService {
       )
     return question;
   }
+
+  async getQuestionsForSpecificQuiz(quizNumber: Number, videoId: string): Promise<any> {
+
+    const video_id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(videoId);
+    const questions = await this.questionModel.find({videoId: video_id, quizNumber});
+    return questions.length;
+  }
+
   async updateQuestionData(questionId: string, updateQuestionDataDto: UpdateQuestionDataDto):Promise<VideoInterface> {
     const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(questionId);
     const video: VideoInterface = await this.questionModel.findByIdAndUpdate(id, updateQuestionDataDto, {new: true});
@@ -69,7 +77,6 @@ export class QuestionService {
         videoId:question.videoId,
         questionTime: question.questionTime
       })
-      console.log("anyQuestion: ",anyQuestion)
       const revisionVideoId: string = question.videoRevisionId.toString();
       if(anyQuestion.length == 1){
         const revisionQuestion = await this.videoService.getVideoById(revisionVideoId);

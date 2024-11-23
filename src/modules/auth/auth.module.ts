@@ -11,15 +11,20 @@ import { JwtModule } from '../../shared/modules/jwt/jwt.module';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { FacebookAuthGuard } from '../../common/guards/facebook-auth.guard';
 import { EmailService } from '../../shared/services/email.service';
+import { Instructor, InstructorSchema } from '../instructor/schema/instructor.schema';
+import { Admin, AdminSchema } from '../admin/schema/admin.scema';
 
 @Module({
   controllers: [AuthController],
   providers: [AuthService, TwilioService, EmailService, GoogleStrategy, GoogleAuthGuard, FacebookStrategy, FacebookAuthGuard],
   imports:[
     MongooseModule.forFeature([
-      {name: User.name, schema: UserSchema}
+      {name: User.name, schema: UserSchema},
+      {name: Instructor.name, schema: InstructorSchema},
+      {name: Admin.name, schema: AdminSchema}
     ]),
     JwtModule
   ],
+  exports:[AuthService]
 })
 export class AuthModule {}

@@ -28,6 +28,21 @@ export class Video {
 
   @Prop({
     type: String,
+    required: false,
+    trim: true
+  })
+  pdf: string;
+
+  @Prop({
+    type: String,
+    required: false,
+    trim: true
+  })
+  notes: string;
+
+
+  @Prop({
+    type: String,
     required: true,
     trim: true
   })

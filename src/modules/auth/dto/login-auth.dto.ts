@@ -7,6 +7,6 @@ export class LoginAuthDto {
   email: string;
   @IsNotEmpty({message: "Password is required"})
   @IsString({message: "Password must be a string"})
-  @ApiProperty({ example: 'Rs24222682', description: 'Password of the user', type: String})
+  @ApiProperty({ example: 'Rm-24222682', description: 'Password of the user', type: String})
   password: string;
 }

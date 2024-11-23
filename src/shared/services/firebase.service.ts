@@ -5,6 +5,7 @@ import {
   getStorage,
   ref,
   uploadBytesResumable,
+  updateMetadata
 } from 'firebase/storage';
 import firebase from "firebase/compat";
 import Storage = firebase.storage.Storage;
@@ -67,5 +68,68 @@ export class FirebaseService {
         throw new BadRequestException(`Error deleting file: ${error.message}`);
       }
     }
+  }
+
+  async uploadPdfToCloud(file: Express.Multer.File, storagePath: string): Promise<string> {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Ensure the file is a PDF
+    const allowedMimeType = 'application/pdf';
+    if (file.mimetype !== allowedMimeType) {
+      throw new BadRequestException('Unsupported file type. Only PDFs are allowed.');
+    }
+
+    const fileName = encodeURIComponent(file.originalname);
+    const storageRef = ref(this.storage, `${storagePath}/${fileName}`);
+
+    // Set the correct metadata for PDFs
+    const metadata = { contentType: file.mimetype };
+
+    const uploadTask = uploadBytesResumable(storageRef, file.buffer, metadata);
+
+    try {
+      await uploadTask;
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+      return downloadURL;
+    } catch (err) {
+      console.error(`Error uploading file ${file.originalname}: ${err.message}`);
+      throw new BadRequestException(`Error uploading file ${file.originalname}: ${err.message}`);
+    }
+  }
+
+
+  /**
+   * Delete a PDF from Firebase Storage
+   * @param pdfPath - The storage path of the PDF to delete
+   */
+  async removePdfFromCloud(pdfPath: string): Promise<void> {
+    const storageRef = ref(this.storage, pdfPath);
+
+    try {
+      // Attempt to delete the file
+      await deleteObject(storageRef);
+    } catch (error) {
+      // Handle specific errors
+      if (error.code === 'storage/object-not-found') {
+        throw new NotFoundException(`File not found: ${pdfPath}`);
+      } else {
+        console.error(`Error deleting file ${pdfPath}: ${error.message}`);
+        throw new BadRequestException(`Error deleting file: ${error.message}`);
+      }
+    }
+  }
+
+  async setFileToDownload(filePath: string) {
+    const storage = getStorage();
+    const fileRef = ref(storage, filePath);
+
+    const newMetadata = {
+      contentDisposition: 'attachment',
+    };
+
+    await updateMetadata(fileRef, newMetadata);
+    console.log('Metadata updated to force download.');
   }
 }

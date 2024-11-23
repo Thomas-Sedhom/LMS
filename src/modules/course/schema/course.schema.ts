@@ -33,6 +33,21 @@ export class Course {
   coverImage: string;
 
   @Prop({
+    type: String,
+    required: true,
+    trim: true,
+  })
+  category: string;
+
+  @Prop({
+    type: String,
+    required: true,
+    trim: true,
+  })
+  subCategory: string;
+
+
+  @Prop({
     type: mongoose.Types.ObjectId,
     required: true,
     ref: "Instructor",
@@ -51,8 +66,8 @@ export class Course {
 
   @Prop({
     required: true,
-    default: () => new Date().toISOString()
+    default: () => new Date()
   })
-  createdDate: string
+  createdDate: Date;
 }
 export const CourseSchema =SchemaFactory.createForClass(Course)

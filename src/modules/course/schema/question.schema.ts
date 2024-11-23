@@ -3,6 +3,7 @@ import { RoleEnum } from "../../../common/enum/role.enum";
 import mongoose from 'mongoose';
 import { QuestionTypeEnum } from '../../../common/enum/question.enum';
 import { bool } from 'twilio/lib/base/serialize';
+import { EnrollmentSchema } from '../../enrollment/schema/enrollment.schema';
 
 @Schema()
 export class Question {
@@ -19,6 +20,13 @@ export class Question {
     trim: true
   })
   questionTime: string
+
+  @Prop({
+    type: Number,
+    required: true,
+    trim: true
+  })
+  quizNumber: number
 
   @Prop({
     type: String,  // Use String for a single enum value
@@ -104,3 +112,5 @@ export class Question {
   creationDate: string
 }
 export const QuestionSchema = SchemaFactory.createForClass(Question)
+
+QuestionSchema.index({ videoId: 1, quizNumber: 1 });

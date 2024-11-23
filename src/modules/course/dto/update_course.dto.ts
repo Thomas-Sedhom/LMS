@@ -23,5 +23,10 @@ export class UpdateCourseDto {
   index?: string;
 
   @IsOptional()
+  @IsString({message: "Category must be a string"})
+  @ApiProperty({ example: 'Secondary', description: 'Category of the video', type: String })
+  category?: string;
+
+  @IsOptional()
   coverImage?: string;
 }

@@ -9,6 +9,10 @@ export class QuestionDto {
   @ApiProperty({ example: '55.60', description: 'Time of the question', type: String })
   questionTime: string
 
+  @IsNotEmpty({message: "Quiz number for the question is required"})
+  @ApiProperty({ example: '2', description: 'Quiz number for the question', type: Number })
+  quizNumber: number
+
   @IsNotEmpty({message: "Question type is required"})
   @IsString({message: "Question type must be a string"})
   @ApiProperty({ example: 'mcq', description: 'Type of the question', type: String })

@@ -10,6 +10,11 @@ export class UpdateQuestionDataDto {
   questionTime?: string
 
   @IsOptional()
+  @IsString({message: "Quiz number for the question must be a string"})
+  @ApiProperty({ example: '2', description: 'Quiz number for the question', type: String })
+  quizNumber?: string
+
+  @IsOptional()
   @IsString({message: "Question type must be a string"})
   @ApiProperty({ example: 'mcq', description: 'Type of the question', type: String })
   questionType?: QuestionTypeEnum

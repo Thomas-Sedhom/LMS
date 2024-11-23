@@ -18,6 +18,16 @@ export class CourseDto {
   @ApiProperty({ example: 'You will learn NodeJs & NestJs', description: 'What you will learn of the course', type: String })
   whatYouLearn: string;
 
+  @IsNotEmpty({message: "Category is required"})
+  @IsString({message: "Category must be a string"})
+  @ApiProperty({ example: 'secondary', description: 'Category of the course', type: String })
+  category: string;
+
+  @IsNotEmpty({message: "Sub category is required"})
+  @IsString({message: "Sub category must be a string"})
+  @ApiProperty({ example: 'Sub secondary', description: 'Sub category of the course', type: String })
+  subCategory: string;
+
   @IsOptional()
   coverImage: string;
 }

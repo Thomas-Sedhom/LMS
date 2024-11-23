@@ -100,14 +100,13 @@ export class VideoService {
 
   async getVideoOTP(videoID: string): Promise<any> {
     const credentials = await this.videoCipherService.getVideoOTP(videoID);
-    console.log(44)
     const videoData = await this.videoModel
       .findOne({videoId: videoID})
       .populate({
         path: 'questionsId',  // field to populate
         select:
           '_id videoId questionTime question choice1 choice2 choice3 choice4 chooseAnswer' +
-          'expressiveAnswer paragraphAnswer trueFalseAnswer completeAnswer videoRevisionId creationDate',  // only select specific fields from the video model
+          'expressiveAnswer paragraphAnswer trueFalseAnswer completeAnswer videoRevisionId creationDate quizNumber',  // only select specific fields from the video model
       });
 
     // Step 3: Initialize an object to group questions by `questionTime`
@@ -171,11 +170,17 @@ export class VideoService {
     const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(videoId);
     const video = await this.videoModel.findById(id);
     const videosId: string[] = [video.videoId];
-    console.log(videosId)
     await this.deleteVideos(videosId)
     video.videoId = updateVideoDto.videoId;
     video.videoUrl = updateVideoDto.videoUrl;
     await video.save();
+    return video;
+  }
+
+  async addPDF(videoId: string, pdf: any){
+    const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(videoId);
+    console.log(pdf)
+    let video = await this.videoModel.findByIdAndUpdate(id, {pdf}, {new: true});
     return video;
   }
 
@@ -198,7 +203,6 @@ export class VideoService {
     if (idsList.length === 0) {
       throw new BadRequestException('No videos found for this course');
     }
-
     // Fetch the course document
     const course = await this.courseModel.findById(id);
     if (!course) {
@@ -310,4 +314,9 @@ export class VideoService {
   }
 
 
+  async setNotes(videoId: string, notes: string) {
+    const id: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(videoId);
+    let video = await this.videoModel.findByIdAndUpdate(id, {notes}, {new: true});
+    return video;
+  }
 }

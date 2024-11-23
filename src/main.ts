@@ -7,6 +7,7 @@ import { setupSwagger } from './config/swagger.config';
 import helmet from 'helmet';
 import helmetConfig from './config/helmet.config';
 import { CustomExceptionFilter } from './common/filters/custom-exception.filter';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,13 +15,13 @@ async function bootstrap() {
   // Enable shutdown hooks for graceful shutdown
   app.enableShutdownHooks();
 
+  dotenv.config();
+
   setupSwagger(app);
   app.enableCors({
-    origin: '*', // Allow all origins for development purposes
+    origin: 'null', // Allow all origins for development purposes
     credentials: true, // Enable credentials if needed
   });
-
-
   app.useGlobalFilters(new CustomExceptionFilter());
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({
@@ -35,7 +36,6 @@ async function bootstrap() {
     forbidNonWhitelisted: true, // Throws an error if non-whitelisted properties are sent
     transform: true, // Automatically transform payloads to match DTO types
   }));
-
 
   app.use(cookieParser());
   app.use(helmetConfig);

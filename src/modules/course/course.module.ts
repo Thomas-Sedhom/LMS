@@ -10,6 +10,13 @@ import { Course, CourseSchema } from './schema/course.schema';
 import { FirebaseService } from '../../shared/services/firebase.service';
 import { QuestionService } from './service/question.service';
 import { Question, QuestionSchema } from './schema/question.schema';
+import { JwtAuthGuard } from '../../common/guards/JwtAuth.guard';
+import { JwtService } from '../../shared/modules/jwt/jwt.service';
+import { JwtModule } from '../../shared/modules/jwt/jwt.module';
+import { AuthModule } from '../auth/auth.module';
+import { InstructorModule } from '../instructor/instructor.module';
+import { AdminService } from '../admin/admin.service';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -19,8 +26,13 @@ import { Question, QuestionSchema } from './schema/question.schema';
       {name: Question.name, schema: QuestionSchema},
     ]),
     HttpModule,
+    JwtModule,
+    AuthModule,
+    InstructorModule,
+    AdminModule
   ], // Add HttpModule here
   controllers: [CourseController],
-  providers: [CourseService, VideoCipherService, VideoService, FirebaseService, QuestionService]
+  providers: [CourseService, VideoCipherService, VideoService, FirebaseService, QuestionService],
+  exports: [CourseService, VideoService, QuestionService]
 })
 export class CourseModule {}

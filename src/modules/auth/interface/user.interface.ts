@@ -8,5 +8,5 @@ export interface UserInterface {
   password?: string;
   phone?: string;
   role?: RoleEnum;
-  registrationDate?: string;
+  registrationDate?: Date;
 }

@@ -19,18 +19,19 @@ import { generateOtp } from '../../common/utils/generate-otp.util';
 import { MailgunService } from '../../shared/services/mailgun.service';
 import { VerifyOtpByEmailDto } from './dto/verify-otp-by-email.dto';
 import { EmailService } from '../../shared/services/email.service';
-
-
+import { Instructor } from '../instructor/schema/instructor.schema';
+import { Admin } from '../admin/schema/admin.scema';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(Instructor.name) private readonly instructorModel: Model<Instructor>,
+    @InjectModel(Admin.name) private readonly adminModel: Model<Admin>,
     private readonly jwtService: JwtService,
-    private readonly twilioService: TwilioService,
     private readonly emailService: EmailService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    ) {}
+  ) {}
 
   async saveTemporaryRegistrationData(user: RegisterAuthDto) {
     const isEmailTaken =  await checkEmail(user.email, this.userModel);
@@ -49,7 +50,7 @@ export class AuthService {
     if (!userDto) {
       throw new BadRequestException({ message: 'Registration data not found or expired.' });
     }
-    userDto.registrationDate = new Date().toISOString();
+    userDto.registrationDate = new Date();
 
     const newUser = await this.userModel.create(userDto);
 
@@ -62,6 +63,7 @@ export class AuthService {
       user: {
         id: newUser._id,
         email: newUser.email,
+        role: newUser.role
       },
     };
   }
@@ -86,19 +88,26 @@ export class AuthService {
       user: {
         id: existingUser._id,
         email: existingUser.email,
+        role: existingUser.role
       },
     };
   }
 
   async refreshTokens(refreshToken: string) {
     const decodedToken = await this.jwtService.verifyToken(refreshToken);
-    const user = await this.userModel.findById(decodedToken.sub);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
+    console.log(decodedToken)
+    let data: any
+    if(decodedToken.role == "student")
+      data = await this.userModel.findById(decodedToken.sub);
+    else if(decodedToken.role == "instructor")
+      data = await this.instructorModel.findById(decodedToken.sub);
+    else
+      data = await this.adminModel.findById(decodedToken.sub);
 
-    const newAccessToken = await this.jwtService.generateAccessToken(user);
-    const newRefreshToken = await this.jwtService.generateRefreshToken(user);
+    if (!data) throw new UnauthorizedException('User not found');
+
+    const newAccessToken = await this.jwtService.generateAccessToken(data);
+    const newRefreshToken = await this.jwtService.generateRefreshToken(data);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
@@ -113,7 +122,7 @@ export class AuthService {
       userObj.lastName = nameParts[1] || ''; // Default to empty string if not provided
       userObj.password = null;
       userObj.phone = null;
-      userObj.registrationDate = new Date().toISOString();
+      userObj.registrationDate = new Date()
 
       user = await this.userModel.create(userObj);
     }
@@ -139,7 +148,7 @@ export class AuthService {
       userObj.lastName = profile._json.last_name; // Default to empty string if not provided
       userObj.password = null;
       userObj.phone = null;
-      userObj.registrationDate = new Date().toISOString();
+      userObj.registrationDate = new Date();
 
       user = await this.userModel.create(userObj);
     }
